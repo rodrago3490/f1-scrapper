@@ -6,10 +6,35 @@ import logging
 from typing import Any, Dict, List
 
 import requests
+from requests import Session
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 LOGGER = logging.getLogger(__name__)
 BASE_URL = "https://ergast.com/api/f1"
 DEFAULT_LIMIT = 1000
+
+_SESSION: Session | None = None
+
+
+def _get_session() -> Session:
+    """Return a configured requests session with retry support."""
+
+    global _SESSION
+    if _SESSION is None:
+        session = requests.Session()
+        retry = Retry(
+            total=5,
+            backoff_factor=1,
+            status_forcelist=(429, 500, 502, 503, 504),
+            allowed_methods=("GET",),
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        _SESSION = session
+    return _SESSION
 
 
 def _perform_request(endpoint: str, *, params: Dict[str, Any] | None = None) -> Dict[str, Any]:
@@ -28,7 +53,8 @@ def _perform_request(endpoint: str, *, params: Dict[str, Any] | None = None) -> 
 
     url = f"{BASE_URL}/{endpoint}"
     LOGGER.debug("Requesting %s params=%s", url, params)
-    response = requests.get(url, params=params, timeout=30)
+    session = _get_session()
+    response = session.get(url, params=params, timeout=30)
     response.raise_for_status()
     return response.json()
 

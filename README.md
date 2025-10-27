@@ -24,3 +24,8 @@ El archivo Excel resultante contiene dos hojas:
 
 - `races`: resultados de cada gran premio (sin incluir sprints).
 - `qualifying`: resultados de cada sesión de clasificación.
+
+La herramienta reintenta automáticamente las descargas frente a errores de red
+transitorios (códigos 429/5xx o reinicios de conexión). Si el proceso falla
+tras varios intentos, revisa tu conexión o configura los certificados/puerto
+según sea necesario para tu entorno.

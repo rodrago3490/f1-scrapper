@@ -5,6 +5,9 @@ from __future__ import annotations
 import argparse
 import logging
 from pathlib import Path
+import sys
+
+import requests
 
 from f1_scraper import (
     export_to_excel,
@@ -41,10 +44,14 @@ def main() -> None:
     args = parse_args()
     logging.basicConfig(level=getattr(logging, args.log_level))
 
-    logging.info("Fetching race results for %s", args.year)
-    races = fetch_race_results(args.year)
-    logging.info("Fetching qualifying results for %s", args.year)
-    qualifying = fetch_qualifying_results(args.year)
+    try:
+        logging.info("Fetching race results for %s", args.year)
+        races = fetch_race_results(args.year)
+        logging.info("Fetching qualifying results for %s", args.year)
+        qualifying = fetch_qualifying_results(args.year)
+    except requests.RequestException as exc:
+        logging.error("Failed to download data: %s", exc)
+        sys.exit(1)
 
     logging.info("Transforming data into dataframes")
     races_df = results_to_dataframe(races)
